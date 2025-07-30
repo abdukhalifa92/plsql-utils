@@ -1,42 +1,22 @@
-# 🧾 PRINT_CLOB
-
-A PL/SQL utility procedure to safely print the contents of a `CLOB` variable to `DBMS_OUTPUT`.
-
----
+# 📄 GET_MIMETYPE
+A PL/SQL utility function to determine the MIME type of a file based on its extension.
 
 ## 🔍 Purpose
-
-Oracle's `DBMS_OUTPUT.PUT_LINE` has a limit of 32,767 characters. If you want to display or debug CLOB content, this utility reads and prints it in manageable chunks.
-
----
-
-## 💡 Features
-
-- Splits and prints large CLOBs in `32,767`-character chunks
-- Safe loop handling for any CLOB size
-- Useful for debugging CLOB columns or outputs in Oracle APEX, logging, or scripts
-
----
+This function maps a given file extension (like .jpg, .pdf, .xlsx, etc.) to its standard MIME type. It is useful when uploading or generating files and needing to correctly identify the Content-Type for HTTP headers, database records, etc.
 
 ## 📥 Input
-
-| Parameter | Type | Description                  |
-|-----------|------|------------------------------|
-| `P_CLOB`  | CLOB | The CLOB you want to print   |
-
----
-
+p_file_extension – The file extension as VARCHAR2. It can be with or without the leading dot (e.g., .pdf or pdf).
+## 📤 Output
+Returns the corresponding MIME type as a VARCHAR2.
+Returns 'text/plain' as a default for unknown extensions.
+Returns NULL if an error occurs.
 ## ✅ Example Usage
-
-```sql
-DECLARE
-   l_clob CLOB;
 BEGIN
-   -- Assign some large content
-   l_clob := TO_CLOB('Line 1' || CHR(10) || RPAD('X', 50000, 'X'));
-
-   -- Print it
-   print_clob(l_clob);
+   DBMS_OUTPUT.put_line(get_mimetype('.jpg'));   -- image/jpeg
+   DBMS_OUTPUT.put_line(get_mimetype('xlsx'));   -- application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+   DBMS_OUTPUT.put_line(get_mimetype('unknown'));-- text/plain
 END;
-/
-```
+## 📌 Notes
+Internally trims leading dot (.) and lowercases the extension for normalization.
+
+Easily extendable using the CASE statement.
