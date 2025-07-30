@@ -1,31 +1,27 @@
-## Ignore Visual Studio SSDT sqlproj specific temporary files, build results, etc
-## 
-##
-## Get latest from https://github.com/github/gitignore/blob/master/SSDT-sqlproj.gitignore
-# Build output
+# Oracle/PLSQL temporary or generated files
+*.log
+*.tmp
+*.bak
+*.out
+*.rej
+*.dmp
+*.sqlj
+
+# IDE-specific
+*.sqlproj.user
+*.dbmdl
+*.publish.xml
+.vscode/
+.idea/
+*.iml
+
+# Build and metadata folders
 bin/
 obj/
+dist/
+build/
 
-# DACPAC files
-*.dacpac
-
-# Publish profiles (optional, if environment-specific)
-*.publish.xml
-
-# SQL Server debug files
-*.dbmdl
-*.sqlcmdvars
-
-# Visual Studio settings
-.vs/
-
-# User-specific files
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-
-# Backup files
-*.bak
-*.log
-
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
