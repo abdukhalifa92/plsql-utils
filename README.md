@@ -17,6 +17,7 @@ This repository provides reusable PL/SQL snippets for everyday Oracle tasks — 
 | `EXTRACT_JSON_VALUE` | Extracts the value of a specific key from a flat JSON string using regex          |
 | `GET_MIMETYPE`       | Returns the appropriate MIME type for a given file extension                      |
 | `PRINT_CLOB`         | Outputs large CLOB content safely using `DBMS_OUTPUT`                             |
+| `DELETE_IG_ROWS`     | Delete all rows in Oracle APEX Interactive Grid (24.2+) with multiple methods     |
 
 ---
 
