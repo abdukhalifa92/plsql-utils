@@ -1,19 +1,23 @@
 CREATE OR REPLACE PROCEDURE generate_views(
-    p_table_list IN SYS.ODCIVARCHAR2LIST,
-    p_view_name  IN VARCHAR2,
-    p_execute    IN VARCHAR2 DEFAULT 'Y'
+    p_table_list     IN SYS.ODCIVARCHAR2LIST,
+    p_view_name      IN VARCHAR2,
+    p_execute        IN VARCHAR2 DEFAULT 'Y',
+    p_auto_rename    IN VARCHAR2 DEFAULT 'Y'  -- 'Y': auto-suffix if exists, 'N': raise error
 ) AS
+-------------------------------------------------------------------------
     TYPE t_table_alias_map IS TABLE OF VARCHAR2(30) INDEX BY VARCHAR2(128);
-    TYPE t_column_set IS TABLE OF BOOLEAN INDEX BY VARCHAR2(128);
-
-    v_sql           CLOB := 'CREATE OR REPLACE VIEW ' || p_view_name || ' AS' || CHR(10) || 'SELECT' || CHR(10);
-    v_select_cols   CLOB := '';
-    v_from_clause   CLOB := '';
-    v_used_columns  t_column_set;
-    v_table_alias   t_table_alias_map;
-    v_alias_index   INTEGER := 1;
-    v_joined_tables SYS.ODCIVARCHAR2LIST := SYS.ODCIVARCHAR2LIST();
-
+    TYPE t_column_set      IS TABLE OF BOOLEAN      INDEX BY VARCHAR2(128);
+-------------------------------------------------------------------------
+    v_sql             CLOB;
+    v_select_cols     CLOB := '';
+    v_from_clause     CLOB := '';
+    v_used_columns    t_column_set;
+    v_table_alias     t_table_alias_map;
+    v_alias_index     INTEGER := 1;
+    v_joined_tables   SYS.ODCIVARCHAR2LIST := SYS.ODCIVARCHAR2LIST();
+    v_final_view_name VARCHAR2(128) := UPPER(p_view_name);
+    v_suffix_index    INTEGER := 1;
+-------------------------------------------------------------------------
     PROCEDURE split_schema_table (
         full_name IN VARCHAR2,
         schema OUT VARCHAR2,
@@ -28,7 +32,7 @@ CREATE OR REPLACE PROCEDURE generate_views(
             tbl := UPPER(full_name);
         END IF;
     END;
-
+-------------------------------------------------------------------------
     PROCEDURE add_columns(p_schema VARCHAR2, p_table VARCHAR2, p_alias VARCHAR2) IS
     BEGIN
         FOR col IN (
@@ -47,7 +51,7 @@ CREATE OR REPLACE PROCEDURE generate_views(
             END IF;
         END LOOP;
     END;
-
+-------------------------------------------------------------------------
     FUNCTION find_join_condition(
         s1 VARCHAR2, t1 VARCHAR2, a1 VARCHAR2,
         s2 VARCHAR2, t2 VARCHAR2, a2 VARCHAR2
@@ -78,8 +82,35 @@ CREATE OR REPLACE PROCEDURE generate_views(
 
         RETURN NULL;
     END;
-
+-------------------------------------------------------------------------
 BEGIN
+    -- Validate view name format
+    IF NOT REGEXP_LIKE(v_final_view_name, '^[A-Z][A-Z0-9_]{0,127}$') THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Invalid view name format.');
+    END IF;
+
+    -- Auto-increment view name if already exists
+    IF p_execute = 'Y' AND p_auto_rename = 'Y' THEN
+        WHILE TRUE LOOP
+            BEGIN
+                EXECUTE IMMEDIATE 'SELECT 1 FROM ' || v_final_view_name || ' WHERE 1=0';
+                v_suffix_index := v_suffix_index + 1;
+                v_final_view_name := UPPER(p_view_name) || '_V' || TO_CHAR(v_suffix_index);
+            EXCEPTION
+                WHEN OTHERS THEN
+                    EXIT;
+            END;
+        END LOOP;
+    ELSIF p_execute = 'Y' THEN
+        BEGIN
+            EXECUTE IMMEDIATE 'SELECT 1 FROM ' || v_final_view_name || ' WHERE 1=0';
+            RAISE_APPLICATION_ERROR(-20002, 'View already exists: ' || v_final_view_name);
+        EXCEPTION
+            WHEN OTHERS THEN
+                NULL;
+        END;
+    END IF;
+-------------------------------------------------------------------------
     FOR i IN 1 .. p_table_list.COUNT LOOP
         DECLARE
             full_name VARCHAR2(128) := p_table_list(i);
@@ -130,9 +161,9 @@ BEGIN
             END IF;
         END;
     END LOOP;
-
-    -- Final SQL
-    v_sql := v_sql || v_select_cols || CHR(10) || 'FROM' || CHR(10) || v_from_clause;
+-------------------------------------------------------------------------
+    -- Build full SQL
+    v_sql := 'CREATE OR REPLACE VIEW ' || v_final_view_name || ' AS' || CHR(10) || 'SELECT' || CHR(10) || v_select_cols || CHR(10) || 'FROM' || CHR(10) || v_from_clause;
 
     -- Output
     DBMS_OUTPUT.PUT_LINE('--------------------------------------');
@@ -141,14 +172,14 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE(v_sql);
     DBMS_OUTPUT.PUT_LINE('--------------------------------------');
 
-    -- Execute if allowed
+    -- Execute
     IF UPPER(p_execute) = 'Y' THEN
         EXECUTE IMMEDIATE v_sql;
-        DBMS_OUTPUT.PUT_LINE('✅ View "' || p_view_name || '" created.');
+        DBMS_OUTPUT.PUT_LINE('✅ View "' || v_final_view_name || '" created.');
     ELSE
-        DBMS_OUTPUT.PUT_LINE('⚠️ View not created. Execution skipped as per input.');
+        DBMS_OUTPUT.PUT_LINE('⚠️ View not created. Execution skipped.');
     END IF;
-
+-------------------------------------------------------------------------
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('❌ Error: ' || SQLERRM);
