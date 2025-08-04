@@ -119,9 +119,4 @@ MIT License – Free to use, modify, and distribute.
 
 ## 🙌 Contributing
 
-Pull requests and suggestions are welcome! Some ideas for improvement:
-
-- Support for custom join conditions
-- Support for outer joins and filters
-- Add options for column aliasing and exclusion
-- Output SQL to file or a log table
+Pull requests and suggestions are welcome!
