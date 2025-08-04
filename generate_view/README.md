@@ -14,6 +14,8 @@ A PL/SQL procedure that automatically generates and (optionally) executes a `VIE
 - Orders columns by `COLUMN_ID` for better readability
 - Generates clean and formatted SQL
 - Supports preview mode without creating the view
+- ✅ **Automatically avoids name collision** by appending `_V1`, `_V2`, etc. when a view with the same name already exists
+- ❌ Optionally raises an error instead of overwriting if auto-renaming is disabled
 
 ---
 
@@ -35,11 +37,12 @@ END;
 
 ## 🧾 Parameters
 
-| Parameter      | Type                   | Description                                                           |
-|----------------|------------------------|-----------------------------------------------------------------------|
-| `p_table_list` | `SYS.ODCIVARCHAR2LIST` | List of tables to include in the view (may use schema-qualified names like `'HR.EMPLOYEES'`) |
-| `p_view_name`  | `VARCHAR2`             | Name of the view to be created (e.g., `'EMP_DEPT_VIEW'`)              |
-| `p_execute`    | `VARCHAR2`             | `'Y'` to execute and create the view (default), `'N'` to only display the generated SQL without executing |
+| Parameter        | Type                   | Description                                                                                   |
+|------------------|------------------------|-----------------------------------------------------------------------------------------------|
+| `p_table_list`   | `SYS.ODCIVARCHAR2LIST` | List of tables to include in the view (may use schema-qualified names like `'HR.EMPLOYEES'`) |
+| `p_view_name`    | `VARCHAR2`             | Name of the view to be created (e.g., `'EMP_DEPT_VIEW'`)                                     |
+| `p_execute`      | `VARCHAR2`             | `'Y'` to execute and create the view (default), `'N'` to only display the generated SQL       |
+| `p_auto_rename`  | `VARCHAR2`             | `'Y'` (default) to auto-suffix view name if it already exists, `'N'` to raise an error       |
 
 ---
 
@@ -56,6 +59,9 @@ The procedure analyzes the tables in the order they are listed and attempts to j
   - Uses clean formatting with indentation and new lines.
   - Outputs the final `CREATE OR REPLACE VIEW` SQL script via `DBMS_OUTPUT`.
   - Optionally executes the SQL if `p_execute = 'Y'`.
+- **Manages Existing View Conflicts:**
+  - If `p_auto_rename = 'Y'`, it will generate a new name like `EMP_DEPT_VIEW_V1`, `EMP_DEPT_VIEW_V2`, etc.
+  - If `p_auto_rename = 'N'`, and the view exists, it raises an error.
 
 ---
 
